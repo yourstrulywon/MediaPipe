@@ -31,7 +31,6 @@ STYLES = [
     {"name": "X-RAY",    "kind": "negative", "tint": (235, 235, 235), "border": (255, 255, 255), "spark": "stars"},
 ]
 
-
 def ensure_model(path: Path = MODEL_PATH) -> Path:
     if path.is_file() and path.stat().st_size > 1_000_000:
         return path
@@ -47,7 +46,6 @@ def ensure_model(path: Path = MODEL_PATH) -> Path:
     print("Model ready.")
     return path
 
-
 def build_detector(model_path: Path, max_hands: int = 2,
                    min_confidence: float = 0.5) -> "vision.HandLandmarker":
     options = vision.HandLandmarkerOptions(
@@ -59,7 +57,6 @@ def build_detector(model_path: Path, max_hands: int = 2,
         min_tracking_confidence=min_confidence,
     )
     return vision.HandLandmarker.create_from_options(options)
-
 
 def portal_corners(hands, width: int, height: int):
     if len(hands) < 2:
@@ -77,7 +74,6 @@ def portal_corners(hands, width: int, height: int):
         px(left[THUMB_TIP]),     
     ], dtype=np.float32)
 
-
 class SmoothedQuad:
     def __init__(self, alpha: float = 0.45):
         self.alpha = alpha
@@ -92,7 +88,6 @@ class SmoothedQuad:
         else:
             self.value = self.value * (1.0 - self.alpha) + quad * self.alpha
         return self.value
-
 
 class PinchTap:
     def __init__(self, pinch: float = 0.45, release: float = 0.75,
@@ -127,7 +122,6 @@ class PinchTap:
             self.last = now
             return True
         return False
-
 
 class Portal:
     def __init__(self, width: int, height: int, glass: float = 0.8,
@@ -165,13 +159,11 @@ class Portal:
         elif kind == "holo":
             panel = cv2.addWeighted(frame, 0.85, tint_layer, 0.45, 15)
             panel[::3] = cv2.addWeighted(panel[::3], 0.55, tint_layer[::3], 0.45, 10)
-            # moving bright scan band
             y = int((now * 140) % (h + 80)) - 40
             y0, y1 = max(y, 0), min(y + 26, h)
             if y1 > y0:
                 panel[y0:y1] = cv2.addWeighted(panel[y0:y1], 1.0,
                                                tint_layer[y0:y1], 0.45, 0)
-
         elif kind == "void":
             panel = cv2.addWeighted(frame, 0.22, tint_layer, 0.30, 0)
 
@@ -185,8 +177,7 @@ class Portal:
                                             tint_layer[::step], 0.4, 0)
             panel[:, ::step] = cv2.addWeighted(panel[:, ::step], 0.6,
                                                tint_layer[:, ::step], 0.4, 0)
-
-        else:  # negative / x-ray
+        else:  
             panel = cv2.addWeighted(255 - frame, 0.88, tint_layer, 0.12, 0)
             edges = cv2.Canny(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 60, 140)
             panel[edges > 0] = (40, 40, 40)
@@ -231,7 +222,6 @@ class Portal:
         cv2.add(frame, border_layer, dst=frame)
         cv2.polylines(frame, [pts], True, (255, 255, 255), 1, cv2.LINE_AA)
 
-
 def draw_hud(frame, has_portal, style_name, flash_until, now, fps):
     h, w = frame.shape[:2]
     title = "P O R T A L   H A N D S"
@@ -240,7 +230,6 @@ def draw_hud(frame, has_portal, style_name, flash_until, now, fps):
     cv2.putText(frame, title, (x, 38), cv2.FONT_HERSHEY_DUPLEX, 0.7, (0, 0, 0), 5, cv2.LINE_AA)
     cv2.putText(frame, title, (x, 38), cv2.FONT_HERSHEY_DUPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
 
-    # current portal type
     cv2.putText(frame, f"PORTAL: {style_name}", (14, 74), cv2.FONT_HERSHEY_SIMPLEX,
                 0.6, (0, 0, 0), 4, cv2.LINE_AA)
     cv2.putText(frame, f"PORTAL: {style_name}", (14, 74), cv2.FONT_HERSHEY_SIMPLEX,
@@ -332,8 +321,7 @@ def main() -> None:
             quad = quad_filter.update(portal_corners(hands, w, h))
             if quad is not None and cv2.contourArea(quad.astype(np.float32)) < 1500:
                 quad = None          
-
-            # pinch thumb + index together -> next portal type
+                
             tapped = pinch_tap.update(hands, now) if len(hands) >= 2 else False
             if tapped:
                 style_index = (style_index + 1) % len(STYLES)
